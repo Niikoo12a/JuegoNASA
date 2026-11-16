@@ -1,5 +1,6 @@
 import { t } from './i18n';
 import { audio } from './audio';
+import { alertFx, between, flash, pop } from './miniFx';
 import {
   ALGAE_DRAIN, ALGAE_SECONDS, HARVEST_PENALTY, HARVEST_SECONDS, HEAL_HOLD_MS, ICE_FILL_SECONDS, ICE_MAX_SECONDS, PEDAL_BEATS, PEDAL_PASS, algaeScore, drillScore, harvestScore, healScore,
   messageScore, pedalScore, type MiniDifficulty,
@@ -135,30 +136,20 @@ export function mountAntennaGame(root: HTMLElement, cb: MiniCallbacks): MiniGame
 }
 
 // ------------------------------------------------------------------ cosechar: tocar solo las plantas maduras, contra el reloj
-/** Tomatera en maceta: madura = tomates rojos con brillo y chispa; sin madurar = tomates verdes pequeños y flor. */
+/**
+ * Madura = fruto GRANDE, dorado y brillante, con estrella y borde punteado; verde = fruto PEQUEÑO, oscuro y con capuchón.
+ * Se distingue por tamaño, luminosidad y forma, no por el color rojo/verde (apto para daltonismo).
+ */
 const plantSvg = (ripe: boolean): string => {
-  const fruit = ripe ? '#ff4f63' : '#9be86a';
-  const fruitDark = ripe ? '#c7283f' : '#5fb446';
-  const r = ripe ? 8 : 5.5;
-  const tomato = (x: number, y: number): string =>
-    `<circle cx="${x}" cy="${y}" r="${r}" fill="${fruit}" stroke="#0e0b33" stroke-width="3"/>
-     <path d="M${x - r + 2.5} ${y + r * 0.35} Q${x} ${y + r + 1} ${x + r - 2.5} ${y + r * 0.35}" fill="none" stroke="${fruitDark}" stroke-width="2" stroke-linecap="round"/>
-     <circle cx="${x - r * 0.38}" cy="${y - r * 0.38}" r="${r * 0.24}" fill="#fff" opacity=".75"/>
-     <path d="M${x - 3.5} ${y - r + 0.5} l3.5 -3.2 l3.5 3.2 M${x} ${y - r + 0.5} v-4" fill="none" stroke="#2f8f3a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
-  const leaf = (x: number, y: number, rot: number): string =>
-    `<g transform="rotate(${rot} ${x} ${y})"><path d="M${x} ${y} C${x - 10} ${y - 4} ${x - 9} ${y - 16} ${x} ${y - 18} C${x + 9} ${y - 16} ${x + 10} ${y - 4} ${x} ${y}Z" fill="#5ad6b2" stroke="#0e0b33" stroke-width="3" stroke-linejoin="round"/><path d="M${x} ${y - 2} V${y - 14}" stroke="#2a8f74" stroke-width="2" stroke-linecap="round"/></g>`;
-  return `<svg viewBox="0 0 72 84" width="72" height="84" aria-hidden="true">
-    <ellipse cx="36" cy="80" rx="22" ry="3.5" fill="#0e0b33" opacity=".35"/>
-    <path d="M16 58 H56 L51 78 H21Z" fill="#ff7a59" stroke="#0e0b33" stroke-width="3.5" stroke-linejoin="round"/>
-    <rect x="13" y="52" width="46" height="9" rx="4" fill="#ff9475" stroke="#0e0b33" stroke-width="3.5"/>
-    <path d="M24 64 V74 M48 64 V74" stroke="#cf5a3a" stroke-width="3" stroke-linecap="round"/>
-    <path d="M17 54 Q36 49 55 54" fill="none" stroke="#4a2f1f" stroke-width="3" stroke-linecap="round"/>
-    <path d="M36 52 C33 42 39 34 36 20" fill="none" stroke="#2f8f3a" stroke-width="4" stroke-linecap="round"/>
-    <path d="M45 54 V16" stroke="#a87c46" stroke-width="2.5" stroke-linecap="round"/>
-    ${leaf(36, 46, -62)}${leaf(36, 40, 60)}${leaf(36, 30, -34)}${leaf(36, 26, 38)}
-    ${tomato(25, 41)}${tomato(48, 36)}${tomato(34, 20)}
-    ${ripe ? '<path d="M60 6 l2.4 6.6 6.6 2.4 -6.6 2.4 -2.4 6.6 -2.4 -6.6 -6.6 -2.4 6.6 -2.4Z" fill="#ffcb47" stroke="#0e0b33" stroke-width="2"/>'
-      : '<circle cx="14" cy="22" r="3" fill="#ffcb47" stroke="#0e0b33" stroke-width="1.6"/><circle cx="14" cy="22" r="1" fill="#ff7a59"/>'}
+  const fruit = ripe ? '#ffcb47' : '#2c6b4f';
+  const r = ripe ? 9 : 5;
+  const dot = (x: number, y: number): string => `<circle cx="${x}" cy="${y}" r="${r}" fill="${fruit}" stroke="#0e0b33" stroke-width="3"/>${ripe ? `<circle cx="${x - 3}" cy="${y - 3}" r="2.4" fill="#fff8d6"/>` : `<path d="M${x - 4} ${y - r + 1} l4 -5 l4 5Z" fill="#1c4533" stroke="#0e0b33" stroke-width="2"/>`}`;
+  return `<svg viewBox="0 0 64 72" width="64" height="72" aria-hidden="true">${ripe ? '<circle cx="32" cy="36" r="31" fill="none" stroke="#ffcb47" stroke-width="3" stroke-dasharray="3 6" opacity=".9"/>' : ''}
+    <path d="M12 52 H52 L47 68 H17Z" fill="#ff7a59" stroke="#0e0b33" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M32 52 V22" stroke="#2f8f3a" stroke-width="4" stroke-linecap="round"/>
+    <path d="M32 40 q-16 -2 -18 -16 q16 0 18 16Z M32 34 q16 -2 18 -16 q-16 0 -18 16Z" fill="#5ad6b2" stroke="#0e0b33" stroke-width="3" stroke-linejoin="round"/>
+    ${dot(21, 46)}${dot(43, 44)}${dot(32, 19)}
+    ${ripe ? '<path d="M50 6 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2Z" fill="#ffcb47" stroke="#0e0b33" stroke-width="2"/>' : ''}
   </svg>`;
 };
 
@@ -176,10 +167,38 @@ export function mountHarvestGame(root: HTMLElement, cb: MiniCallbacks, time = 1)
   let left = seconds;
   let picked = 0;
   let over = false;
+  const plants = [...root.querySelectorAll<HTMLButtonElement>('.plant')];
+  const evTimers: number[] = [];
+  const open = (): HTMLButtonElement[] => plants.filter((p) => !p.disabled);
+  // Evento 1: una fruta dorada que brilla da +3 s si se toca a tiempo (aparece entre los 4 y 8 s)
+  evTimers.push(window.setTimeout(() => {
+    const ripe = open().filter((p) => p.dataset.ripe === 'true');
+    if (over || !ripe.length) return;
+    const g = ripe[Math.floor(Math.random() * ripe.length)];
+    g.classList.add('is-gold');
+    g.dataset.gold = '1';
+    pop(root, '⭐');
+    evTimers.push(window.setTimeout(() => { g.classList.remove('is-gold'); delete g.dataset.gold; }, 4500));
+  }, between(4, 8) * 1000));
+  // Evento 2: entre los 9 y 13 s dos macetas titilan y cambian de lugar
+  evTimers.push(window.setTimeout(() => {
+    const free = open();
+    if (over || free.length < 2) return;
+    const [a, b] = [...free].sort(() => Math.random() - 0.5);
+    a.classList.add('is-swap'); b.classList.add('is-swap');
+    flash(root, '#4cc3f5');
+    evTimers.push(window.setTimeout(() => {
+      a.classList.remove('is-swap'); b.classList.remove('is-swap');
+      if (over) return;
+      const mark = document.createComment('');
+      a.replaceWith(mark); b.replaceWith(a); mark.replaceWith(b);
+    }, 800));
+  }, between(9, 13) * 1000));
   const end = (): void => {
     if (over) return;
     over = true;
     window.clearInterval(timer);
+    evTimers.forEach((x) => window.clearTimeout(x));
     root.querySelectorAll<HTMLButtonElement>('.plant').forEach((p) => (p.disabled = true));
     cb.onDone(harvestScore(picked, ripeTotal));
   };
@@ -193,6 +212,7 @@ export function mountHarvestGame(root: HTMLElement, cb: MiniCallbacks, time = 1)
     if (p.dataset.ripe === 'true') {
       picked++;
       audio.play('hit');
+      if (p.dataset.gold) { left = Math.min(seconds, left + 3); p.classList.remove('is-gold'); alertFx(root, '+3', '#5ad6b2'); }
       p.classList.add('is-picked');
       p.disabled = true;
       basket[picked - 1]?.classList.add('is-full'); // la canasta se va llenando
@@ -207,7 +227,7 @@ export function mountHarvestGame(root: HTMLElement, cb: MiniCallbacks, time = 1)
     }
   }));
   cb.onProgress(0);
-  return { gesture: 'tap', keys: ['← ↑ → ↓', 'Enter'], destroy() { over = true; window.clearInterval(timer); } };
+  return { gesture: 'tap', keys: ['← ↑ → ↓', 'Enter'], destroy() { over = true; window.clearInterval(timer); evTimers.forEach((x) => window.clearTimeout(x)); } };
 }
 
 // ------------------------------------------------------------------ curarse: tratar cada herida manteniendo apretado hasta que se cierre
@@ -305,23 +325,50 @@ const PEDAL_SPEED = 0.24;   // px por ms que caen las notas
  */
 /** `time`: multiplica el espacio entre notas (más difícil, más rápido). */
 export function mountPedal(root: HTMLElement, cb: MiniCallbacks, time = 1): MiniGameHandle {
-  const sides = Array.from({ length: PEDAL_BEATS }, (_, i) => (i % 2 === 0 ? 'L' : 'R') as 'L' | 'R');
+  // ritmo distinto cada vez: lados al azar (sin más de 2 iguales seguidos), pausas desiguales que se acortan hacia el final,
+  // una ráfaga de 4 notas más juntas y, a veces, dos pedales a la vez
+  const score: Array<{ side: 'L' | 'R'; t: number }> = [];
+  let clock = PEDAL_LEAD;
+  let run = 0;
+  let lastSide: 'L' | 'R' = Math.random() < 0.5 ? 'L' : 'R';
+  const burstAt = 4 + Math.floor(Math.random() * (PEDAL_BEATS - 10));
+  while (score.length < PEDAL_BEATS) {
+    if (score.length >= 3 && score.length <= PEDAL_BEATS - 2 && Math.random() < 0.16) {
+      score.push({ side: 'L', t: clock }, { side: 'R', t: clock });
+    } else {
+      let side: 'L' | 'R' = Math.random() < 0.5 ? 'L' : 'R';
+      if (side === lastSide && run >= 2) side = side === 'L' ? 'R' : 'L';
+      run = side === lastSide ? run + 1 : 1;
+      lastSide = side;
+      score.push({ side, t: clock });
+    }
+    const inBurst = score.length > burstAt && score.length <= burstAt + 4;
+    clock += PEDAL_GAP * time * (inBurst ? 0.78 : [0.75, 1, 1, 1.3][Math.floor(Math.random() * 4)]) * (1 - 0.25 * (score.length / PEDAL_BEATS));
+  }
   root.innerHTML = `<div class="pedal" style="width:${WIRE_W}px;height:${WIRE_H}px">
     <div class="pedal__lane pedal__lane--l"></div><div class="pedal__lane pedal__lane--r"></div>
+    <div class="pedal__combo" data-combo aria-hidden="true"></div>
     <div class="pedal__line" style="top:${PEDAL_LINE}px"></div>
     <div class="pedal__meter" aria-hidden="true"><i data-meter></i><b class="pedal__goal" style="left:${PEDAL_PASS * 100}%"></b></div>
     <button class="pedal__btn pedal__btn--l" data-side="L" aria-label="${t('mini.pedalLeft')}">◀</button>
     <button class="pedal__btn pedal__btn--r" data-side="R" aria-label="${t('mini.pedalRight')}">▶</button></div>`;
   const meter = root.querySelector<HTMLElement>('[data-meter]')!;
   const lanes = { L: root.querySelector<HTMLElement>('.pedal__lane--l')!, R: root.querySelector<HTMLElement>('.pedal__lane--r')! };
-  const notes = sides.map((side, i) => {
+  const notes = score.map(({ side, t: at }) => {
     const el = document.createElement('i');
     el.className = `pedal__note pedal__note--${side.toLowerCase()}`;
     el.textContent = side === 'L' ? '◀' : '▶';
     lanes[side].append(el);
-    return { side, t: PEDAL_LEAD + i * PEDAL_GAP * time, el, judged: false };
+    return { side, t: at, el, judged: false };
   });
   const t0 = performance.now();
+  const combo = root.querySelector<HTMLElement>('[data-combo]')!;
+  const evTimers: number[] = [];
+  // aviso de la ráfaga ~1 s antes de las notas juntas; la línea brilla mientras dura
+  const burstT = score[Math.min(score.length - 1, burstAt + 1)].t;
+  evTimers.push(window.setTimeout(() => { alertFx(root, '⚡', '#ffcb47'); root.firstElementChild?.classList.add('is-burst'); }, Math.max(0, burstT - 1100)));
+  evTimers.push(window.setTimeout(() => root.firstElementChild?.classList.remove('is-burst'), burstT + 2600));
+  let streak = 0;
   let hits = 0;
   let judged = 0;
   let over = false;
@@ -332,12 +379,15 @@ export function mountPedal(root: HTMLElement, cb: MiniCallbacks, time = 1): Mini
     n.el.classList.add(hit ? 'is-hit' : 'is-miss');
     audio.play(hit ? 'hit' : 'miss');
     if (hit) hits++;
+    streak = hit ? streak + 1 : 0;
+    if (hit && streak % 5 === 0) { combo.textContent = `🔥${streak}`; combo.classList.remove('is-on'); void combo.offsetWidth; combo.classList.add('is-on'); }
     meter.style.width = `${(hits / PEDAL_BEATS) * 100}%`;
     meter.classList.toggle('is-pass', hits / PEDAL_BEATS > PEDAL_PASS);
     cb.onProgress(hits / PEDAL_BEATS);
     if (judged === PEDAL_BEATS && !over) {
       over = true;
       cancelAnimationFrame(raf);
+      evTimers.forEach((x) => window.clearTimeout(x));
       window.setTimeout(() => cb.onDone(pedalScore(hits)), 250);
     }
   };
@@ -372,7 +422,7 @@ export function mountPedal(root: HTMLElement, cb: MiniCallbacks, time = 1): Mini
       if (down) press(k === 'a' ? 'L' : 'R');
       return true;
     },
-    destroy() { over = true; cancelAnimationFrame(raf); },
+    destroy() { over = true; cancelAnimationFrame(raf); evTimers.forEach((x) => window.clearTimeout(x)); },
   };
 }
 
@@ -586,6 +636,17 @@ export function mountAlgae(root: HTMLElement, cb: MiniCallbacks, cfg: MiniDiffic
   const plants = root.querySelector<SVGGElement>('[data-plants]')!;
   let growing: boolean | null = null; // para sonar solo al cambiar entre «crece» y «se marchita»
   let elapsed = 0;
+  // Evento: a los 5–9 s y de nuevo a los 14–17 s un medidor al azar se sacude y salta (hay que corregirlo)
+  const evTimers: number[] = [];
+  const jolt = (): void => {
+    if (over) return;
+    const i = Math.floor(Math.random() * count);
+    pos[i] = Math.min(1, Math.max(0, pos[i] + (pos[i] > 0.5 ? -0.28 : 0.28)));
+    gauges[i].classList.add('is-alert');
+    alertFx(root, '❗', '#ff7a59');
+    window.setTimeout(() => gauges[i].classList.remove('is-alert'), 1000);
+  };
+  evTimers.push(window.setTimeout(jolt, between(5, 9) * 1000), window.setTimeout(jolt, between(14, 17) * 1000));
   let hold = 0; // segundos acumulados con las tres en la franja (baja al salirse)
   let over = false;
   let last = performance.now();
@@ -648,6 +709,6 @@ export function mountAlgae(root: HTMLElement, cb: MiniCallbacks, cfg: MiniDiffic
       if (!over) set(i, down);
       return true;
     },
-    destroy() { over = true; cancelAnimationFrame(raf); },
+    destroy() { over = true; cancelAnimationFrame(raf); evTimers.forEach((x) => window.clearTimeout(x)); },
   };
 }

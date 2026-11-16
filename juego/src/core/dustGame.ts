@@ -1,5 +1,5 @@
 import { t } from './i18n';
-
+import { alertFx } from './miniFx';
 /**
  * Minijuego de limpiar los paneles: dos paneles solares con su pata de abajo, cubiertos de polvo, y un cepillo.
  * Se limpia a mano: arrastrando el ratón o el dedo, o con las flechas del teclado. Al sacar casi todo el polvo, termina.
@@ -144,7 +144,8 @@ export function mountDustGame(root: HTMLElement, opts: Options): DustGame {
   drawPanel(panel.getContext('2d')!);
   const dctx = dirt.getContext('2d', { willReadFrequently: true })!;
   drawDust(dctx, opts.dust);
-  const total = Math.max(1, dustPixels(dctx));
+  let total = Math.max(1, dustPixels(dctx));
+  let gusted = false;
   let cx = AREA.x + AREA.w / 2;
   let cy = AREA.y + AREA.h + 60;
   let drawing = false;
@@ -157,7 +158,21 @@ export function mountDustGame(root: HTMLElement, opts: Options): DustGame {
     brush.style.transform = `translate(${cx - 14}px, ${cy - 70}px)`;
   };
   const check = (): void => {
-    const fraction = Math.min(1, 1 - dustPixels(dctx) / total);
+    let fraction = Math.min(1, 1 - dustPixels(dctx) / total);
+    if (!gusted && fraction >= 0.5 && fraction < 0.85) { // evento: una ráfaga de viento trae 3 manchas nuevas
+      gusted = true;
+      const before = dustPixels(dctx);
+      for (let k = 0; k < 3; k++) {
+        const pn = PANELS[k % 2];
+        const gx = pn.x + 30 + Math.random() * (pn.w - 60);
+        const gy = pn.y + 30 + Math.random() * (pn.h - 60);
+        dctx.fillStyle = '#b4ae9e';
+        dctx.beginPath(); dctx.ellipse(gx, gy, 26 + Math.random() * 8, 20, Math.random(), 0, Math.PI * 2); dctx.fill();
+      }
+      total += Math.max(0, dustPixels(dctx) - before);
+      alertFx(root, '💨', '#4cc3f5');
+      fraction = Math.min(1, 1 - dustPixels(dctx) / total);
+    }
     opts.onProgress(fraction);
     if (fraction >= DONE_AT && !finished) {
       finished = true;

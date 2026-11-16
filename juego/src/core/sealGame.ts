@@ -1,5 +1,5 @@
 import { t } from './i18n';
-
+import { alertFx } from './miniFx';
 /**
  * Minijuego de sellar una fractura: una placa del casco con una grieta zigzag por la que se escapa el aire.
  * Se sigue la grieta con el sellador (arrastrando el ratón o el dedo, o con las flechas del teclado) hasta cubrirla entera.
@@ -10,6 +10,8 @@ const H = 500;
 const TOOL_R = 20;      // a qué distancia de la grieta sella el sellador
 const DONE_AT = 0.97;   // fracción de grieta sellada para terminar
 const KEY_STEP = 16;
+/** Dónde está la punta de la boquilla dentro del dibujo de la herramienta (84 px): debe quedar justo sobre el punto que se sella. */
+const TIP = { x: 57, y: 68 };
 
 export interface SealGame {
   nudge(dx: number, dy: number): void;
@@ -33,11 +35,24 @@ const TOOL_SVG = `<svg viewBox="0 0 96 96" width="84" height="84" aria-hidden="t
 
 /** Grieta zigzag de arriba a abajo, con muestras cada pocos píxeles para medir el avance. */
 function makeCrack(): { poly: Pt[]; samples: Pt[] } {
-  const poly: Pt[] = [{ x: 190, y: 28 }];
-  let x = 190;
-  for (let y = 28 + 52; y <= H - 28; y += 52) {
-    x = Math.min(W - 70, Math.max(70, x + (Math.random() < 0.5 ? -1 : 1) * (28 + Math.random() * 44)));
-    poly.push({ x, y: Math.min(H - 28, y) });
+  // cada grieta es distinta: sale de un punto cualquiera de arriba, con tramos rectos, curvas suaves y quiebres bruscos de largo variable
+  let x = 90 + Math.random() * (W - 180);
+  const poly: Pt[] = [{ x, y: 28 }];
+  let dir = Math.random() < 0.5 ? -1 : 1;
+  let y = 28;
+  while (y < H - 28) {
+    if (Math.random() < 0.4) dir = -dir;
+    const r = Math.random();
+    let dx: number;
+    let dy: number;
+    if (r < 0.2) { dx = 0; dy = 40 + Math.random() * 60; }                 // tramo recto hacia abajo
+    else if (r < 0.4) { dx = dir * (60 + Math.random() * 60); dy = 10 + Math.random() * 14; } // quiebre casi horizontal
+    else { dx = dir * (15 + Math.random() * 70); dy = 34 + Math.random() * 62; }              // diagonal suave o marcada
+    const nx = Math.min(W - 60, Math.max(60, x + dx));
+    if (nx === x && dx !== 0) dir = -dir; // chocó con el borde: rebota
+    x = nx;
+    y = Math.min(H - 28, y + dy);
+    poly.push({ x, y });
   }
   const samples: Pt[] = [];
   for (let i = 0; i < poly.length - 1; i++) {
@@ -75,7 +90,7 @@ function drawPlate(ctx: CanvasRenderingContext2D, poly: Pt[]): void {
   }
   ctx.restore();
   ctx.fillStyle = '#ff6b7a'; ctx.strokeStyle = '#0e0b33'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.arc(W / 2, 40, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(poly[0].x, 40, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   // grieta
   const line = (w: number, c: string): void => {
     ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
@@ -101,17 +116,50 @@ export function mountSealGame(root: HTMLElement, opts: Options): SealGame {
   const bctx = bead.getContext('2d')!;
   // bocanadas de aire que se escapan por la grieta: se apagan a medida que se sella
   air.innerHTML = samples.filter((_, i) => i % 9 === 0).map((p, i) => `<i style="left:${p.x}px;top:${p.y}px;animation-delay:${(i % 6) * 0.25}s"></i>`).join('');
-  const sealed = new Array<boolean>(samples.length).fill(false);
+  const sealed: boolean[] = new Array<boolean>(samples.length).fill(false);
   let count = 0;
-  let cx = 190;
-  let cy = 28;
+  let branched = false;
+  const pctx = plate.getContext('2d')!;
+  let cx = poly[0].x;
+  let cy = poly[0].y;
   let drawing = false;
   let finished = false;
   let last: Pt | null = null;
 
-  const place = (): void => void (tool.style.transform = `translate(${cx - 12}px, ${cy - 70}px)`);
+  /** Evento: pasada la mitad, la grieta echa una rama corta que también hay que sellar (aviso con ⚠ y marco rojo). */
+  const addBranch = (): void => {
+    branched = true;
+    const pool = samples.map((_, i) => i).filter((i) => !sealed[i] && i > samples.length * 0.35);
+    if (!pool.length) return;
+    const o = samples[pool[Math.floor(pool.length / 2)]];
+    const dir = o.x < W / 2 ? 1 : -1;
+    const pts: Pt[] = [o];
+    let bx = o.x;
+    let by = o.y;
+    for (let k = 0; k < 3; k++) {
+      bx = Math.min(W - 60, Math.max(60, bx + dir * (22 + Math.random() * 20)));
+      by = Math.min(H - 40, by + 14 + Math.random() * 26);
+      pts.push({ x: bx, y: by });
+    }
+    pctx.save();
+    pctx.lineJoin = 'round'; pctx.lineCap = 'round';
+    for (const [w, c] of [[16, '#0e0b33'], [8, '#0b0c0f'], [2, 'rgba(255,203,71,.75)']] as Array<[number, string]>) {
+      pctx.strokeStyle = c; pctx.lineWidth = w;
+      pctx.beginPath(); pts.forEach((p, i) => (i ? pctx.lineTo(p.x, p.y) : pctx.moveTo(p.x, p.y))); pctx.stroke();
+    }
+    pctx.restore();
+    for (let i = 0; i < pts.length - 1; i++) {
+      const n = Math.ceil(Math.hypot(pts[i + 1].x - pts[i].x, pts[i + 1].y - pts[i].y) / 7);
+      for (let k = 0; k < n; k++) { samples.push({ x: pts[i].x + ((pts[i + 1].x - pts[i].x) * k) / n, y: pts[i].y + ((pts[i + 1].y - pts[i].y) * k) / n }); sealed.push(false); }
+    }
+    air.insertAdjacentHTML('beforeend', pts.slice(1).map((p, i) => `<i style="left:${p.x}px;top:${p.y}px;animation-delay:${(i % 3) * 0.2}s"></i>`).join(''));
+    alertFx(root, '⚠', '#ff6b7a');
+  };
+
+  const place = (): void => void (tool.style.transform = `translate(${cx - TIP.x}px, ${cy - TIP.y}px)`);
   const progress = (): void => {
     const f = count / samples.length;
+    if (!branched && f >= 0.4 && f < 0.8) addBranch();
     air.style.opacity = String(Math.max(0, 1 - f * 1.15));
     opts.onProgress(f);
     if (f >= DONE_AT && !finished) {
