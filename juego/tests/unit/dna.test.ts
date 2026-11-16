@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BIO_TESTS, DNA_PROBLEMS, bioScore, dnaCost, dnaEfficiency, dnaFit, dnaBonus, dnaScore, makeSample, needsMoreTests, type DnaDesign } from '../../src/sim/dna';
+import { BIO_TESTS, DNA_PROBLEMS, bioScore, dnaCost, dnaEfficiency, dnaFit, dnaBonus, dnaScore, makeSample, needsMoreTests, STRAINS, dnaCostFor, dnaScoreFor, type DnaDesign } from '../../src/sim/dna';
 
 const design = (over: Partial<DnaDesign> = {}): DnaDesign => ({ sensor: 'light', fn: 'photosynthesis', sw: 'onDetect', ...over });
 
@@ -63,5 +63,24 @@ describe('laboratorio: biofirmas', () => {
     expect(bioScore(s, -1, 0, !s.alive)).toBe(0);
     expect(needsMoreTests(1)).toBe(true);
     expect(needsMoreTests(2)).toBe(false);
+  });
+});
+
+describe('cepas', () => {
+  const p = DNA_PROBLEMS['huerto-lunar'];
+  const good: DnaDesign = { sensor: p.sensor, fn: p.fn, sw: 'onDetect' };
+  it('la cepa ideal para el problema puntúa más que una inadecuada', () => {
+    const ideal = STRAINS.find((s) => s.good === p.sensor)!;
+    const other = STRAINS.find((s) => s.good !== p.sensor)!;
+    expect(dnaScoreFor(good, p, ideal)).toBeGreaterThan(dnaScoreFor(good, p, other));
+  });
+  it('el puntaje queda entre 0 y 1', () => {
+    for (const s of STRAINS) {
+      expect(dnaScoreFor(good, p, s)).toBeLessThanOrEqual(1);
+      expect(dnaScoreFor({ sensor: 'radiation', fn: 'oxygen', sw: 'always' }, p, s)).toBeGreaterThanOrEqual(0);
+    }
+  });
+  it('el costo escala con la cepa', () => {
+    expect(dnaCostFor(good, STRAINS[0])).toBeLessThan(dnaCostFor(good, STRAINS[2]));
   });
 });
