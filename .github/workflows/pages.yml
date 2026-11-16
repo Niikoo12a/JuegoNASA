@@ -1,0 +1,42 @@
+# Publica el juego en GitHub Pages desde el fork de Nicolás (Niikoo12a/JuegoNASA) cada vez que se sube a `develop`.
+# En cualquier otro repositorio (por ejemplo Cold-Mocha/JuegoNASA) el trabajo se omite: no cambia nada allí.
+name: Publicar en GitHub Pages (fork)
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: github.repository == 'Niikoo12a/JuegoNASA'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    defaults:
+      run:
+        working-directory: juego
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: juego/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: juego/dist
+      - id: deployment
+        uses: actions/deploy-pages@v4
