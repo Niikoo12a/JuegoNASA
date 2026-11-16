@@ -132,3 +132,11 @@ Las fotos del Archivo están en `juego/public/game/archive/` (reducidas a 960 px
 | voyager | Artist Concept of Voyager | NASA/JPL | NASA (dominio público) | [original](https://images.nasa.gov/details/PIA04495) |
 | water-shield | Personal Radiation Shielding Garment | NASA / JSC | NASA (dominio público) | [original](https://images.nasa.gov/details/iss053e238888) |
 | webb | James Webb Space Telescope Revealed | NASA / GSFC | NASA (dominio público) | [original](https://images.nasa.gov/details/GSFC_20171208_Archive_e000355) |
+
+## Guías de Control Tierra y cepas
+- **[PROPUESTA]** Las cepas Brisa, Escudo y Polar, sus rasgos y la voz de «Control Tierra» son diseño del juego. Los costos y puntajes del Taller de ADN son un **[MODELO]**: un diseño malo solo rinde menos, nunca causa un desastre.
+- **[REAL]** Una cepa es una variante de un microbio con rasgos propios (concepto de microbiología).
+- **[REAL]** Levadura modificada para producir nutrientes a pedido, probada por la NASA en la Estación Espacial Internacional (ver «Archivo científico»).
+- **[REAL]** Primer laboratorio chileno en la ISS (2026): fuentes oficiales y código del proyecto (ATE220057) en la sección de la misión chilena de este archivo, si ya está integrada.
+- **[REAL]** Los orgánicos solos no prueban vida; se necesitan varias pruebas independientes (guía de biofirmas).
+- El parpadeo de luz (1–2 s) de la guía de biología es un recurso narrativo, no un dato científico; se omite en modo calmado.

@@ -947,3 +947,21 @@ button, .option, [data-action] { touch-action: manipulation; -webkit-tap-highlig
 @media (prefers-reduced-motion: reduce) { .mfx-pop, .mfx-flash, .plant.is-gold, .plant.is-swap, .algae__gauge.is-alert, .pedal__combo.is-on { animation: none; } .mfx-pop { opacity: 1; } }
 
 .hud__ff { margin-top: var(--space-1); }
+
+/* ---- guías de Control Tierra antes de cada minijuego (core/earthGuide.ts) */
+.egd { position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; background: rgba(5, 4, 26, .72); cursor: pointer; }
+.egd__box { position: relative; background: #000; border: 5px solid #f5f5f2; padding: 14px 12px 10px 82px; min-height: 150px; color: #f5f5f2; text-align: left; }
+.egd__box.no-face { padding-left: 12px; }
+.egd__who { position: absolute; top: -17px; left: 12px; background: #000; padding: 0 8px; font: 700 13px/22px var(--font-display, Arial, sans-serif); letter-spacing: .04em; }
+.egd__face { position: absolute; left: 10px; top: 14px; width: 60px; height: 60px; border: 3px solid #f5f5f2; overflow: hidden; background: #10243a; }
+.egd__face svg { width: 100%; height: 100%; display: block; }
+.egd__text { margin: 0; font: 600 15px/1.45 var(--font-display, Arial, sans-serif); min-height: 6.2em; }
+.egd__text.is-narra { font-style: italic; opacity: .9; }
+.egd__text.is-whisper { opacity: .8; font-style: italic; }
+.egd__note { margin: 6px 0 0; font: 600 11px/1.35 Arial, sans-serif; color: #9fe7c8; }
+.egd__next { position: absolute; right: 10px; bottom: 6px; font-size: 14px; animation: egd-blink 1s steps(2, jump-none) infinite; }
+@keyframes egd-blink { 50% { opacity: 0; } }
+.egd__skip { position: absolute; top: 10px; right: 10px; }
+.egd__dim { position: absolute; inset: 0; z-index: 40; pointer-events: none; background: #000; opacity: 0; animation: egd-dim 1.5s ease-in-out 1; }
+@keyframes egd-dim { 0%, 100% { opacity: 0; } 25% { opacity: .92; } 40% { opacity: .35; } 55% { opacity: .9; } 80% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .egd__next, .egd__dim { animation: none; } }
