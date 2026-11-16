@@ -923,3 +923,9 @@ button, .option, [data-action] { touch-action: manipulation; -webkit-tap-highlig
 .lab__game { justify-content: flex-start; min-height: 48px; }
 .lab__play { position: absolute; inset: 0; }
 .lab__after { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+/* Portada ilustrada: el título está en la imagen; los botones van sobre la Luna en un panel oscuro translúcido */
+.menu--cover { justify-content: flex-start; padding-top: 296px; gap: var(--space-3); }
+.menu--cover .menu__subtitle { margin: 0 0 var(--space-3); color: #f5f5f2; text-shadow: 0 2px 8px #05041a, 0 0 2px #05041a; }
+.menu--cover .menu__actions { padding: var(--space-4); background: rgba(14, 11, 51, .78); border: 2px solid rgba(245, 245, 242, .25); border-radius: 20px; }
+.menu--cover .menu__play { min-height: 60px; font-size: 24px; }

@@ -1,9 +1,7 @@
 import Phaser from 'phaser';
 import { audio } from '../core/audio';
-import { SCENES, GAME_WIDTH } from '../core/config';
+import { SCENES, GAME_WIDTH, GAME_HEIGHT } from '../core/config';
 import { state } from '../core/state';
-import { tokenColor } from '../core/theme';
-import { drawStarfield } from '../core/starfield';
 import { UiLayer, labelDialog } from '../core/ui';
 import { fadeTo, fadeIn } from '../core/fade';
 import { settingsHtml, bindSettings, langButtonsHtml } from '../core/settingsPanel';
@@ -17,17 +15,22 @@ export class MainMenuScene extends Phaser.Scene {
     super(SCENES.menu);
   }
 
+  preload(): void {
+    this.load.image('cover', 'game/cover.jpg');
+  }
+
   create(): void {
     audio.setMood('menu');
     state.training = false; // volver al menú cancela un entrenamiento a medias
     fadeIn(this);
-    drawStarfield(this, 'menu', !state.calm);
-    this.drawPlanet();
+    // portada ilustrada (el título MICHINAUTAS va dentro de la imagen; abajo queda un h1 solo para lectores de pantalla)
+    const cover = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'cover');
+    cover.setScale(Math.max(GAME_WIDTH / cover.width, GAME_HEIGHT / cover.height));
 
     const ui = new UiLayer(this, /* html */ `
-      <div class="menu">
+      <div class="menu menu--cover">
         <div class="menu__lang" aria-label="${t('settings.lang')}">${langButtonsHtml()}</div>
-        <h1 class="display-xl menu__title">MICHINAUTAS</h1>
+        <h1 class="sr-only">MICHINAUTAS</h1>
         <p class="body menu__subtitle">${t('menu.subtitle')}</p>
         <nav class="menu__actions" aria-label="${t('menu.nav')}">
           <button class="mn-btn menu__play" data-action="play">${icon('rocket')}${t('menu.play')}</button>
@@ -96,14 +99,6 @@ export class MainMenuScene extends Phaser.Scene {
     bindSettings(ui, () => this.scene.restart()); // el tema redibuja el canvas con los nuevos colores; el idioma, todos los textos
     this.input.keyboard?.on('keydown-ESC', () => !modal.hidden && closeModal());
     ui.focusFirst();
-  }
-
-  private drawPlanet(): void {
-    const g = this.add.graphics();
-    const x = GAME_WIDTH - 180, y = 600;
-    g.fillStyle(tokenColor('nebula-violet'), 1).fillCircle(x, y, 210);
-    g.fillStyle(tokenColor('space-600'), 0.55).fillCircle(x + 60, y + 40, 150);
-    g.lineStyle(10, tokenColor('nebula-magenta'), 1).strokeEllipse(x, y, 620, 120);
   }
 
   /** Jugar: directo a elegir misión. La primera vez, antes, una sesión de entrenamiento aparte (estación de práctica con el Huerto lunar). */
