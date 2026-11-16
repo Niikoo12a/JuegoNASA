@@ -159,6 +159,7 @@ export class LaunchLoadingScene extends Phaser.Scene {
 
     this.startLoading(loadout);
     this.bindSkip();
+    if (state.progress.launchSeen) this.skip = true; // solo la primera vez se ve el despegue entero
     this.ready = true;
   }
 
@@ -801,6 +802,7 @@ export class LaunchLoadingScene extends Phaser.Scene {
 
   private arrive(): void {
     this.done = true;
+    if (!state.progress.launchSeen) state.saveProgress({ launchSeen: true });
     this.tweens.add({ targets: this.ui, alpha: 0, duration: 250 });
     this.time.delayedCall(150, () => fadeTo(this, SCENES.flight, 400));
   }

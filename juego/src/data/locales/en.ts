@@ -320,6 +320,7 @@ export const en: Record<TKey, string> = {
   'hud.actions': 'Room actions',
   'hud.countdown': 'Flare {flare} in {s} s',
   'hud.dash': 'Dash',
+  'hud.ffwd': 'Skip ahead',
   'hud.day': 'Day {day}/{days}',
   'hud.jump': 'Jump',
   'hud.light.day': '☀ Day',

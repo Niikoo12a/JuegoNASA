@@ -319,6 +319,7 @@ export const es = {
   'hud.countdown': 'Llamarada {flare} en {s} s',
   'hud.dash': 'Impulso',
   'hud.day': 'Día {day}/{days}',
+  'hud.ffwd': 'Avanzar el día',
   'hud.jump': 'Saltar',
   'hud.light.day': '☀ Día',
   'hud.light.dusk': '◐ Atardecer',

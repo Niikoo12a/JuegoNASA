@@ -77,6 +77,9 @@ type Overlay = 'none' | 'pause' | 'settings' | 'map' | 'actions' | 'intro' | 'co
 /** Paneles que detienen el reloj de la misión. */
 const PAUSING: ReadonlySet<Overlay> = new Set(['pause', 'settings', 'intro', 'controls', 'minigame']);
 
+/** Cuántas veces más rápido corre el reloj con «Avanzar el día». */
+const FFWD_FACTOR = 6;
+
 export class StationScene extends Phaser.Scene {
   private sim!: Simulation;
   private mission!: Mission;
@@ -112,6 +115,8 @@ export class StationScene extends Phaser.Scene {
 
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private overlay: Overlay = 'none';
+  /** El jugador aceleró el reloj para no esperar al final de la jornada. */
+  private ffwd = false;
   private hudTimer = 0;
   private hudCache = new Map<string, string>();
   private floatPool!: Pool<Phaser.GameObjects.Text>;
@@ -173,7 +178,7 @@ export class StationScene extends Phaser.Scene {
     });
     Object.assign(this, { pos: roomCenter(START_ROOM), face: 1, jumpT: -1, helmet: false, anim: 'idle', oneShot: false, here: START_ROOM, zone: 'ship',
       focused: null, route: [], openOnArrival: false, dash: createDash(), dashDir: { x: 1, y: 0 }, ghostTimer: 0,
-      overlay: 'none', hudTimer: 0, tutorialIndex: -1, ending: false, lastHealth: 100, breachProp: undefined, breachMarker: undefined, recycler: undefined, panelSprites: [], miniGame: undefined, miniOutdoor: false, miniMood: null, pulses: new Map(), taskTab: 1, toasts: new Map(), previewId: null });
+      overlay: 'none', ffwd: false, hudTimer: 0, tutorialIndex: -1, ending: false, lastHealth: 100, breachProp: undefined, breachMarker: undefined, recycler: undefined, panelSprites: [], miniGame: undefined, miniOutdoor: false, miniMood: null, pulses: new Map(), taskTab: 1, toasts: new Map(), previewId: null });
     this.flags = { moved: false, opened: false, map: false, archive: false };
     this.hudCache.clear();
     this.machines = [];
@@ -406,7 +411,8 @@ export class StationScene extends Phaser.Scene {
     const paused = PAUSING.has(this.overlay);
     const simPaused = this.tutorialIndex >= 0 || (paused && !(this.overlay === 'minigame' && this.miniOutdoor)); // afuera el tiempo corre aunque se juegue; en el tutorial el reloj está detenido
     if (!simPaused) {
-      this.sim.tick(dt * this.timescale);
+      if (this.ffwd && this.overlay !== 'none') this.setFfwd(false);
+      this.sim.tick(dt * this.timescale * (this.ffwd ? FFWD_FACTOR : 1));
       this.checkHealthLoss();
       for (const ev of this.sim.drainEvents()) this.onSimEvent(ev);
       tickDash(this.dash, dt);
@@ -616,7 +622,17 @@ export class StationScene extends Phaser.Scene {
   }
 
   // ======================================================== simulación → pantalla
+  private setFfwd(on: boolean): void {
+    this.ffwd = on;
+    const b = this.ui?.el.querySelector<HTMLElement>('[data-ffwd]');
+    if (!b) return;
+    b.setAttribute('aria-pressed', String(on));
+    b.classList.toggle('mn-btn--secondary', !on);
+  }
+
   private onSimEvent(ev: SimEvent): void {
+    // al empezar un nuevo día o ante cualquier alerta, el tiempo vuelve a la velocidad normal
+    if (this.ffwd && ev.type !== 'breachRepaired' && ev.type !== 'panelsRestored') this.setFfwd(false);
     switch (ev.type) {
       case 'dayStart': {
         audio.play('day');
@@ -1140,6 +1156,7 @@ export class StationScene extends Phaser.Scene {
         <div class="hud__clock mn-panel">
           <div class="hud__clock-row"><span class="mn-chip mn-chip--outline" data-day></span><span class="hud__light" data-light></span></div>
           <div class="hud__daybar" aria-hidden="true"><i data-daybar></i></div>
+          <button class="mn-btn mn-btn--secondary mn-btn--sm hud__ff" data-action="ffwd" data-ffwd aria-pressed="false">${icon('skip')}${t('hud.ffwd')}</button>
         </div>
         <div class="hud__guides" data-guides aria-live="polite"></div>
         <div class="hud__restip mn-panel" data-res-tip hidden role="tooltip"></div>
@@ -1199,6 +1216,7 @@ export class StationScene extends Phaser.Scene {
       <div class="modal" data-overlay hidden></div>`, 'screen screen--clear');
 
     this.ui
+      .on('ffwd', () => this.setFfwd(!this.ffwd))
       .on('resume', () => this.closeOverlay())
       .on('close', () => (this.overlay === 'settings' || this.overlay === 'controls' ? this.openPause() : this.closeOverlay()))
       .on('controls', () => this.openControls())

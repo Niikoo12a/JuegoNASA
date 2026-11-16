@@ -34,6 +34,8 @@ export interface Progress {
   achievements: AchievementId[];
   readEntries: string[];
   tutorialDone: boolean;
+  /** Ya vio el despegue completo: las veces siguientes pasa directo a la estación (se puede saltar igual). */
+  launchSeen?: boolean;
   /** Mejor resultado de la misión final «Casa». */
   casa?: { score: number; stars: number };
   /** Veces ganadas, por investigación (y «casa») y por dificultad. */
